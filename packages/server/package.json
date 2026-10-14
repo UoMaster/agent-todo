@@ -13,10 +13,13 @@
   "dependencies": {
     "@agent-todo/shared": "workspace:*",
     "@hono/node-server": "catalog:",
-    "hono": "catalog:"
+    "hono": "catalog:",
+    "pg": "catalog:"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "catalog:",
     "@types/node": "catalog:",
+    "@types/pg": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

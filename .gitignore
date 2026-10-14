@@ -15,6 +15,10 @@ coverage/
 .env.local
 .env.*.local
 
+# Docker 数据（上传目录 bind mount 到宿主机，只保留占位文件）
+data/uploads/*
+!data/uploads/.gitkeep
+
 # 其他
 .DS_Store
 *.log

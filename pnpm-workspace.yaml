@@ -4,8 +4,10 @@ packages:
 # 依赖版本在这里统一维护，各包用 "catalog:" 引用
 # 文档：https://pnpm.io/catalogs
 catalog:
+  '@electric-sql/pglite': ^0.5.9
   '@hono/node-server': ^2.1.5
   '@types/node': ^24.13.3
+  '@types/pg': ^8.23.1
   '@types/react': ^19.3.0
   '@types/react-dom': ^19.3.0
   '@vitejs/plugin-react': ^6.1.2
@@ -15,6 +17,7 @@ catalog:
   citty: ^0.2.2
   hono: ^4.13.13
   oxlint: ^1.88.0
+  pg: ^8.23.1
   playwright: ^1.64.0
   react: ^19.3.0
   react-dom: ^19.3.0

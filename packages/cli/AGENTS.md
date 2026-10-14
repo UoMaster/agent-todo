@@ -15,6 +15,20 @@
 - 错误处理：捕获 shared 的 `ApiError`，输出人类可读信息，退出码非 0；不要把堆栈直接扔给用户
 - 需要访问本机 server 时依赖 `packages/cli/.env` 的 `NO_PROXY`（**仅用 Bun 运行时需要**；Node 的 `fetch` 不受系统代理影响，且 Node 不读取 `.env`，运行 `pnpm cli` 时无需任何额外配置）
 
+## 在宿主机使用（不进镜像）
+
+CLI 是客户端工具，组件不打包进镜像；正确姿势是生成全局启动器，指向容器转发出来的端口：
+
+```bash
+pnpm cli:link        # 在 $PNPM_HOME 生成 agent-todo 启动器（pnpm 12 已移除 link --global）
+agent-todo --help    # 任意目录可用
+agent-todo <命令> --server http://localhost:3001        # 默认就是 3001，可省略
+```
+
+- 启动器直接执行仓库里的 TS 源码，改代码即时生效；**仓库路径变化后重新 `pnpm cli:link`**
+- 指向 Docker 中的 server 时无需额外配置（compose 已把 3001 映射到宿主机）；自定义端口用 `--server` 或 `AGENT_TODO_SERVER`
+- 取消：`pnpm cli:unlink`（只删除本仓库生成的启动器）
+
 ## 命令
 
 - 运行：`pnpm cli --help`（根目录，参数直接跟）或直接执行 `./packages/cli/src/index.ts --help`

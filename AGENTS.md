@@ -28,9 +28,12 @@ pnpm monorepo，四个包：
 
 | 命令 | 说明 |
 | --- | --- |
-| `pnpm dev` | 并行启动 web + server |
+| `pnpm dev` | 并行启动 web + server（不含数据库） |
+| `pnpm dev:all` | **一键开发**：Postgres（Docker）+ web + server（本地热更新） |
 | `pnpm dev:server` / `pnpm dev:web` | 单独启动 |
 | `pnpm cli --help` | 运行 CLI 命令（参数直接跟在后面） |
+| `pnpm cli:link` / `pnpm cli:unlink` | 生成 / 移除全局 `agent-todo` 启动器（宿主机任意目录可用） |
+| `pnpm docker:up` / `docker:down` / `docker:logs` | 完整容器栈（app + db）的启动 / 停止 / 日志 |
 | `pnpm verify` | **提交前门禁**：check + lint + test + coverage（pre-commit 钩子与 CI 都跑它） |
 | `pnpm test` | 全量测试（shared / server / cli / web 四个 project） |
 | `pnpm coverage` | 覆盖率（istanbul，阈值 85%） |
@@ -49,6 +52,15 @@ pnpm monorepo，四个包：
 - 覆盖率基线 **85%**（`pnpm coverage` 会做阈值检查），新增代码不得拉低现有覆盖率
 - 不确定某个功能点需要什么测试？先把验收标准写成测试（输入 → 期望输出），再写实现
 - 各包的测试类型与最低要求见对应包的 `AGENTS.md`
+
+### Docker / 数据库相关约定
+
+- **镜像只包含 web + server**：前端构建产物由 server 托管（`STATIC_DIR`），单端口 3001 出全部。**CLI 不进镜像**（它是宿主机上的客户端工具，用 `pnpm cli:link` 使用）
+- 容器里 server 必须监听 `HOST=0.0.0.0`，否则端口转发访问不到
+- 数据落在卷里：Postgres 用命名卷 `pgdata`（挂在 `/var/lib/postgresql`，**PG 18 起不能挂 `/var/lib/postgresql/data`**）；上传文件 bind mount 到 `./data/uploads`（`data/uploads/*` 已 gitignore，只保留 `.gitkeep`）
+- 涉及 SQL 的逻辑用 **PGlite**（WASM 版 Postgres，进程内）测试，不依赖 Docker；迁移必须有「顺序 / 幂等 / 失败回滚」三类测试
+- 改动 Dockerfile 或 compose 后，必须真实构建并冒烟验证：`docker compose up -d --build` → `curl localhost:3001/api/health`（db.ok 为 true）→ `docker compose down`；**不允许只改不验**
+- 端口冲突：本机若已占用 5432 / 3001，改根目录 `.env` 的 `POSTGRES_PORT` / `APP_PORT`
 
 ### 对已提交功能的修改：强制测试复盘
 
@@ -107,6 +119,9 @@ fix: <一句话描述修改>
 - 覆盖率 provider 是 **istanbul**，不要改回 v8：v8 在 Bun 运行时下不可用，且 Node + 浏览器混合环境用 istanbul 最稳
 - Playwright Chromium 已缓存；新机器需 `pnpm --filter @agent-todo/web exec playwright install chromium`
 - pnpm 12 的供应链策略会自动维护 `pnpm-workspace.yaml` 里的 `minimumReleaseAgeExclude`，不要手工删改，跟随提交即可
+- **Postgres 18 镜像挂载点变了**：必须挂 `/var/lib/postgresql`（数据在 `18/docker` 子目录），挂旧的 `/var/lib/postgresql/data` 会直接拒绝启动
+- **`pnpm install --prod` 时没有生产依赖的包不会生成 `node_modules`**（如 shared），Dockerfile 里逐个 `COPY */node_modules` 会报 "not found"，要整体拷贝依赖层
+- **pnpm 12 移除了一些老写法**：没有 `pnpm link --global`（用 `pnpm cli:link` 的启动器方案）；新版全局 bin 目录 `$PNPM_HOME/bin` 默认不在 PATH（`$PNPM_HOME` 本身在），所以启动器直接生成在 `$PNPM_HOME` 下
 
 ## 文档
 

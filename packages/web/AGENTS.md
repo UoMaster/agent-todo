@@ -14,6 +14,7 @@
 - `pnpm dev:web`（根目录），http://localhost:5173
 - 调用后端统一走 `/api` 前缀（dev 时 Vite 代理到 `http://localhost:3001`，可用 `AGENT_TODO_SERVER` 覆盖）；不要写死 host，需要自定义时用 `VITE_API_BASE_URL`
 - 构建：`pnpm --filter @agent-todo/web build`（`tsc -b && vite build`）
+- **生产 / Docker 模式下 dist 由 server 托管**（server 的 `STATIC_DIR` 指向 `packages/web/dist`，SPA 路由由 server 兜底到 index.html），前端不需要关心部署细节
 
 ## 测试要求（硬性）
 

@@ -1,0 +1,23 @@
+node_modules
+**/node_modules
+
+.git
+.gitignore
+.github
+
+# 测试与构建产物（镜像里会重新构建）
+coverage
+.vitest
+**/dist
+
+# 本地数据与密钥
+.data
+data
+.env
+.env.*
+!.env.example
+
+*.log
+.DS_Store
+README.md
+AGENTS.md

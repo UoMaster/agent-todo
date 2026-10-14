@@ -14,6 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # 迁移守护脚本要对比基准提交，必须拿到完整历史
+          fetch-depth: 0
 
       # 版本取自 package.json 的 packageManager 字段
       - uses: pnpm/action-setup@v6
@@ -28,6 +31,10 @@ jobs:
 
       - name: Install Playwright Chromium
         run: pnpm --filter @agent-todo/web exec playwright install --with-deps chromium
+
+      # 迁移脚本只允许新增：对比 PR 的 base / push 前的提交
+      - name: Check migrations are append-only
+        run: sh scripts/check-migrations.sh --base "${{ github.event.pull_request.base.sha || github.event.before }}"
 
       # check + lint + test + coverage（阈值 85%）
       - name: Verify

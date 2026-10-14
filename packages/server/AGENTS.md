@@ -10,7 +10,7 @@ HTTP API 服务：Hono + `@hono/node-server`，默认端口 **3001**。
 - `src/index.ts` — 只负责启动：建上传目录 → 跑迁移 → serve → 信号处理；不写业务逻辑
 - `src/config.ts` — 环境变量集中在这里读，其他模块不直接碰 `process.env`
 - `src/db.ts` — `SqlClient` 接口 + `createSqlClient(pool)` 适配器 + `pingDb()` 探活
-- `src/migrations.ts` + `migrations/*.sql` — 迁移器与迁移文件（见下）
+- `src/migrations.ts` + `migrations/{schema,data}/*.sql` — 迁移器与迁移脚本（见下）
 - 路由变多后按 `src/routes/<name>.ts` 拆分，用 `app.route()` 挂载
 
 ## 环境变量
@@ -27,9 +27,24 @@ HTTP API 服务：Hono + `@hono/node-server`，默认端口 **3001**。
 ## 数据库与迁移约定
 
 - 只用 `SqlClient` 接口访问数据库（生产 pg / 测试 PGlite 都满足），不要在业务代码里直接 new Pool
-- 迁移文件命名 `NNNN_描述.sql`（4 位数字前缀，按文件名排序执行）；**只新增、不修改**已执行的迁移
-- 每个迁移在事务里执行，失败整体回滚且不记录；重复运行幂等；服务启动时自动执行
-- 涉及 SQL 的测试用 PGlite（`@electric-sql/pglite`，进程内真 Postgres），不要依赖 Docker
+
+### 迁移系统（schema / data 两模块）
+
+- 目录：`migrations/schema/`（库表升级 DDL）、`migrations/data/`（刷数据 DML）
+- 执行顺序：**schema 模块整体先于 data 模块**，模块内按文件名（时间戳）排序；服务启动时自动依次执行
+- 文件名：`<14 位完整时间戳>_<描述>.sql`，一律用 `pnpm migrations:new <schema|data> <描述>` 生成
+- **只允许新增**，三层强制（不靠自觉）：
+  1. pre-commit：`pnpm migrations:check` 对比暂存区，改 / 删 / 重命名即拦截
+  2. CI：同一脚本 `--base <sha>` 对比 PR / push 范围
+  3. 运行时：`migration_runs.checksum` 校验已执行脚本，被改 / 消失都会在启动时报错
+- 记录表 `migration_runs(path, module, checksum, applied_at)`；每个脚本一个事务，失败回滚且不记录；重复运行幂等
+- `data` 脚本尽量幂等（`on conflict do nothing`），便于数据库恢复后重放
+- 历史说明：脚手架阶段的扁平 `migrations/0001_init.sql` 已并入新结构；守护脚本只保护 `migrations/{schema,data}` 两个目录，所以那次重构本身不受影响，之后所有脚本都在保护范围内
+
+### 迁移的测试要求
+
+- 必须覆盖：模块顺序（schema 先于 data，即使 data 时间戳更早）、幂等、失败回滚、**修改检测（checksum）**、**删除检测**、文件名非法、记录表字段
+- 守护脚本与生成器在「临时 git 仓库」里做真实测试（`src/migrations-guard.test.ts`），包含**最小环境（无 LANG）回归用例**
 
 ## 运行时约束
 
@@ -53,7 +68,7 @@ HTTP API 服务：Hono + `@hono/node-server`，默认端口 **3001**。
 - **每个路由都必须有测试**，至少覆盖四类：成功响应（状态码 + body 结构）、请求参数/body 非法（校验失败）、资源不存在（404）、错误响应结构 `{ error, message }`
 - **静态托管要有独立用例**：`/` 返回 index.html、静态文件按路径返回、未知前端路由走 SPA 兜底、`/api/*` 不被兜底吞掉、`STATIC_DIR` 缺 index.html 时退化为 JSON 404
 - **健康检查要有三类用例**：db 正常 / db 失败（仍 200 但 `db.ok=false`）/ 探活实现抛异常被兜住
-- **迁移必须有**：顺序执行 + 记录、重复运行幂等、失败回滚且不记录；SQL 逻辑用 PGlite 测试
+- **迁移测试**：见下方「迁移的测试要求」（顺序 / 幂等 / 回滚 / 修改检测 / 删除检测 / 命名）
 - 业务逻辑（校验、过滤、排序等）优先抽成纯函数（放 shared 或本包 `*.ts`）并单独单测；路由测试只验证接线与响应
 - 测试分层（新增路由必须补第一类，第二类按需）：
   - `src/app.test.ts` — 进程内 `app.request()`，不占真实端口，默认用这种方式

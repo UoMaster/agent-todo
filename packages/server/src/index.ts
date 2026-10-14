@@ -17,7 +17,7 @@ async function bootstrap() {
   const sql = getSqlClient()
   if (sql) {
     try {
-      await runMigrations(sql, config.migrationsDir)
+      await runMigrations(sql, { dir: config.migrationsDir })
     } catch (error) {
       console.error('[server] 数据库迁移失败，服务仍会启动（/api/health 会显示数据库状态）', error)
     }

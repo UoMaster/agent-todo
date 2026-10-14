@@ -32,6 +32,8 @@ pnpm monorepo，四个包：
 | `pnpm dev:all` | **一键开发**：Postgres（Docker）+ web + server（本地热更新） |
 | `pnpm dev:server` / `pnpm dev:web` | 单独启动 |
 | `pnpm cli --help` | 运行 CLI 命令（参数直接跟在后面） |
+| `pnpm migrations:new` | 生成迁移脚本（`<schema\|data> <描述>`，文件名自动带时间戳） |
+| `pnpm migrations:check` | 迁移守护检查（只允许新增，pre-commit / CI 都跑） |
 | `pnpm cli:link` / `pnpm cli:unlink` | 生成 / 移除全局 `agent-todo` 启动器（宿主机任意目录可用） |
 | `pnpm docker:up` / `docker:down` / `docker:logs` | 完整容器栈（app + db）的启动 / 停止 / 日志 |
 | `pnpm verify` | **提交前门禁**：check + lint + test + coverage（pre-commit 钩子与 CI 都跑它） |
@@ -52,6 +54,14 @@ pnpm monorepo，四个包：
 - 覆盖率基线 **85%**（`pnpm coverage` 会做阈值检查），新增代码不得拉低现有覆盖率
 - 不确定某个功能点需要什么测试？先把验收标准写成测试（输入 → 期望输出），再写实现
 - 各包的测试类型与最低要求见对应包的 `AGENTS.md`
+
+### 数据库迁移（硬性规则）
+
+- 迁移脚本分 **schema（库表升级）/ data（刷数据）** 两个模块，服务启动时自动按 schema → data 顺序执行
+- 文件名必须是 `<14 位完整时间戳>_<描述>.sql`；新增一律用 `pnpm migrations:new <schema|data> <描述>` 生成
+- **只允许新增**：修改 / 删除 / 重命名已有脚本会被三层拦截 —— pre-commit（暂存区）、CI（`--base` 范围）、运行时（`migration_runs` 里的 checksum 校验）
+- 记录表 `migration_runs(path, module, checksum, applied_at)`；每个脚本一个事务，失败回滚且不记录
+- 详见 `packages/server/AGENTS.md`「迁移系统」
 
 ### Docker / 数据库相关约定
 
@@ -84,6 +94,7 @@ fix: <一句话描述修改>
 ### 测试基础设施台账（根级）
 
 - **v8 覆盖率在 Bun 运行时下静默失效**：server project 合并崩溃、其余 project 报 0%，"测试通过"但覆盖率数字是假的 → 没发现的原因：只盯着测试是否通过，没有怀疑覆盖率数字本身 → **已加固**：切换到 istanbul，并把 `pnpm coverage`（85% 阈值）纳入 `pnpm verify`，数字异常会直接拦住提交
+- **shell 脚本里 `$var` 紧跟中文全角字符，在非 UTF-8 locale 下会被当成变量名**（`$where：` → unbound variable）：本地 UTF-8 的 shell 完全正常，vitest / CI 环境（没有 LANG）才暴露 → 没发现的原因：脚本测试只在"有 LANG"的环境跑过 → **已加固**：脚本内一律用 `${var}`；`migrations-guard.test.ts` 增加「最小环境（无 LANG）」回归用例，这类"环境相关假绿"以后能被自动抓住
 - **pnpm 的 no-op 安装不执行生命周期脚本**：`postinstall` 只有在真正发生安装（全新 clone、`--force`）时才运行 → **已加固**：钩子安装放在 `postinstall`（全新 clone 必然执行），README 说明"克隆后跑一次 `pnpm install`"；用 `git config --get core.hooksPath` 可确认钩子是否生效
 
 ## 工作流（改完代码必须做）
@@ -122,6 +133,8 @@ fix: <一句话描述修改>
 - **Postgres 18 镜像挂载点变了**：必须挂 `/var/lib/postgresql`（数据在 `18/docker` 子目录），挂旧的 `/var/lib/postgresql/data` 会直接拒绝启动
 - **`pnpm install --prod` 时没有生产依赖的包不会生成 `node_modules`**（如 shared），Dockerfile 里逐个 `COPY */node_modules` 会报 "not found"，要整体拷贝依赖层
 - **pnpm 12 移除了一些老写法**：没有 `pnpm link --global`（用 `pnpm cli:link` 的启动器方案）；新版全局 bin 目录 `$PNPM_HOME/bin` 默认不在 PATH（`$PNPM_HOME` 本身在），所以启动器直接生成在 `$PNPM_HOME` 下
+- **shell 脚本里变量展开后面紧跟中文全角字符必须用 `${var}`**：`$where：` 在非 UTF-8 locale（CI、vitest 环境没有 LANG）下会被 shell 当成变量名的一部分，报 unbound variable；本地 UTF-8 shell 却完全正常
+- **git 不会保留空目录**：`migrations/{schema,data}` 必须各保留至少一个脚本，否则 git 里目录消失、守护脚本会报「缺少迁移模块目录」
 
 ## 文档
 

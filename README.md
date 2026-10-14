@@ -54,6 +54,8 @@ pnpm cli --help
 | `pnpm cli` | 运行 CLI（参数直接跟在后面） |
 | `pnpm cli:link` / `pnpm cli:unlink` | 把 CLI 链接到全局（宿主机直接用 `agent-todo`） |
 | `pnpm docker:up` | 构建并启动完整容器栈（app + db） |
+| `pnpm migrations:new` | 生成迁移脚本（`<schema\|data> <描述>`，文件名自动带时间戳） |
+| `pnpm migrations:check` | 迁移守护检查（只允许新增；pre-commit / CI 都跑它） |
 | `pnpm docker:down` | 停止容器栈 |
 | `pnpm docker:logs` | 跟踪 app 容器日志 |
 | `pnpm verify` | 提交前门禁：check + lint + test + coverage（pre-commit 钩子与 CI 都跑它） |
@@ -106,6 +108,42 @@ pnpm --filter @agent-todo/web test:browser   # 打开真实浏览器窗口跑（
 - **浏览器测试**依赖 Playwright 的 Chromium，首次使用需要 `pnpm --filter @agent-todo/web exec playwright install chromium`（本机已缓存）。它使用 `vitest-browser-react` 的 locators API（`getByRole`、`getByText`、`expect.element(...).toBeVisible()`）。
 - **覆盖率**统一在根 `vitest.config.ts` 配置，provider 用 **istanbul**（纯 JS 插桩，Node 与浏览器两种执行环境都能正确统计）。启动入口（`src/index.ts`、`main.tsx`）不计入行覆盖率，由子进程 e2e 测试覆盖。
 - 测试文件与源码同级存放（`xxx.test.ts` 紧挨 `xxx.ts`），便于就近维护。
+
+## 数据库迁移
+
+迁移脚本分两个模块，按 **schema → data** 顺序在服务启动时自动执行：
+
+```
+packages/server/migrations/
+├── schema/   # 库表升级（DDL）
+│   └── 20261014142746_init.sql
+└── data/     # 刷数据（DML）
+    └── 20261014142846_project_meta.sql
+```
+
+**铁律：只允许新增，不允许修改 / 删除 / 重命名已有脚本。**
+
+- 文件名必须是 `<14 位完整时间戳>_<描述>.sql`，同一模块内按文件名（时间戳）排序执行
+- 新增用生成器（文件名自动带时间戳）：
+
+  ```bash
+  pnpm migrations:new schema add_todos_table
+  pnpm migrations:new data seed_default_settings
+  ```
+
+**这套规则不靠自觉，有三层强制：**
+
+| 层 | 机制 |
+| --- | --- |
+| 本地提交 | `pnpm migrations:check`（已在 `pnpm verify` 里，pre-commit 钩子会执行）对比**暂存区**，改 / 删 / 重命名直接拦截 |
+| CI | 同一脚本用 `--base <base-sha>` 对比 PR / push 范围，提交历史里的违规同样拦得住 |
+| 运行时 | 已执行脚本记录在 `migration_runs` 表（含内容 sha256）：内容被改 → 启动报错；脚本消失 → 启动报错 |
+
+其余行为：
+
+- 每个脚本在一个事务里执行，失败整体回滚且不记录
+- 重复运行幂等；记录表结构为 `migration_runs(path, module, checksum, applied_at)`
+- `data` 模块脚本尽量写成幂等的（`on conflict do nothing`），便于数据库恢复后重放
 
 ## Docker 部署
 

@@ -144,6 +144,8 @@ packages/server/migrations/
 - 每个脚本在一个事务里执行，失败整体回滚且不记录
 - 重复运行幂等；记录表结构为 `migration_runs(path, module, checksum, applied_at)`
 - `data` 模块脚本尽量写成幂等的（`on conflict do nothing`），便于数据库恢复后重放
+- 想"撤销"某个迁移时，**新写一个反向迁移**（如 `drop table`），不要删除老文件
+- 规则自 commit `3c41895`（2026-10-14）起生效；此前的结构重构属一次性豁免，历史不做重写
 
 ## Docker 部署
 

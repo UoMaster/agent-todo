@@ -40,6 +40,14 @@ HTTP API 服务：Hono + `@hono/node-server`，默认端口 **3001**。
 - 记录表 `migration_runs(path, module, checksum, applied_at)`；每个脚本一个事务，失败回滚且不记录；重复运行幂等
 - `data` 脚本尽量幂等（`on conflict do nothing`），便于数据库恢复后重放
 - 历史说明：脚手架阶段的扁平 `migrations/0001_init.sql` 已并入新结构；守护脚本只保护 `migrations/{schema,data}` 两个目录，所以那次重构本身不受影响，之后所有脚本都在保护范围内
+- **规则生效基线：commit `3c41895`（2026-10-14）**。此前的提交包含一次性结构重构（删除扁平 `0001_init.sql`、拆成 schema/data），属豁免范围；**不需要也不建议重写历史**（已推送的提交重写会破坏所有人的 clone 与 CI 记录）
+- 审计历史（可选，检查基线之后有没有违规提交；基线之前属豁免）：
+
+  ```sh
+  git log --diff-filter=DMR --name-status 3c41895..HEAD -- packages/server/migrations/schema packages/server/migrations/data
+  ```
+
+- 想"撤销"一个迁移时：**新写一个反向迁移**（如 `drop table`），而不是删除文件；数据写错了就新增一个 `data` 脚本修正
 
 ### 迁移的测试要求
 

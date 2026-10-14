@@ -100,6 +100,7 @@ pnpm --filter @agent-todo/web test:browser   # 打开真实浏览器窗口跑（
 
 - server 与 cli 直接以 TS 源码运行，由 **Node 原生类型擦除**（type stripping）执行，无需构建；`tsconfig.base.json` 里的 `erasableSyntaxOnly` 保证了这一点。想用 Bun 跑也是同样的源码。
 - 前端 dev 服务器的 `/api` 请求会代理到 `http://localhost:3001`，可通过 `AGENT_TODO_SERVER` 环境变量覆盖。
+- 面向 AI 编码助手的项目约定见根目录与各包的 `AGENTS.md`。
 
 ## 常见问题
 

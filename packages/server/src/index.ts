@@ -1,9 +1,14 @@
-import { Elysia } from 'elysia'
+import { serve } from '@hono/node-server'
+import { app } from './app.ts'
 
 const port = Number(process.env.PORT ?? 3001)
 
-export const app = new Elysia().get('/', () => 'agent-todo server')
+const server = serve({ fetch: app.fetch, port, hostname: 'localhost' }, (info) => {
+  console.log(`🟠 agent-todo server: http://localhost:${info.port}`)
+})
 
-app.listen({ port, hostname: 'localhost' })
-
-console.log(`🦊 agent-todo server: http://localhost:${app.server?.port ?? port}`)
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.on(signal, () => {
+    server.close(() => process.exit(0))
+  })
+}

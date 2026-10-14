@@ -2,21 +2,23 @@
   "name": "@agent-todo/cli",
   "version": "0.1.0",
   "private": true,
-  "description": "agent-todo 命令行客户端（citty）",
+  "description": "agent-todo 命令行客户端（citty，Node 原生运行 TS）",
   "type": "module",
   "bin": {
     "agent-todo": "./src/index.ts"
   },
   "scripts": {
-    "start": "bun src/index.ts",
-    "check": "tsc --noEmit"
+    "start": "node src/index.ts",
+    "check": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@agent-todo/shared": "workspace:*",
     "citty": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "catalog:",
-    "typescript": "catalog:"
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

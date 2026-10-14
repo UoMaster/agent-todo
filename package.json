@@ -6,8 +6,7 @@
   "type": "module",
   "packageManager": "pnpm@12.10.1",
   "engines": {
-    "node": ">=20.19",
-    "bun": ">=1.2",
+    "node": ">=22.18",
     "pnpm": ">=10"
   },
   "scripts": {
@@ -18,9 +17,15 @@
     "build": "pnpm -r build",
     "check": "pnpm -r check",
     "lint": "oxlint",
-    "clean": "rm -rf node_modules packages/*/node_modules packages/*/dist packages/*/.data"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:web": "vitest run --project web",
+    "coverage": "vitest run --coverage",
+    "clean": "rm -rf node_modules packages/*/node_modules packages/*/dist packages/*/.data coverage"
   },
   "devDependencies": {
-    "oxlint": "catalog:"
+    "@vitest/coverage-istanbul": "catalog:",
+    "oxlint": "catalog:",
+    "vitest": "catalog:"
   }
 }

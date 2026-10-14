@@ -5,6 +5,10 @@ node_modules/
 dist/
 *.tsbuildinfo
 
+# 测试产物
+coverage/
+.vitest/
+
 # 本地数据与私有配置
 .data/
 .env

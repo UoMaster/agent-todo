@@ -27,12 +27,12 @@ export default defineConfig({
         'packages/web/src/main.tsx',
       ],
       reportsDirectory: './coverage',
-      // 先设一个宽松基线，后续业务代码变多时可以逐步提高
+      // 基线 85%：提交前必须通过（pre-commit 钩子与 CI 都会检查）
       thresholds: {
-        lines: 70,
-        statements: 70,
-        functions: 70,
-        branches: 70,
+        lines: 85,
+        statements: 85,
+        functions: 85,
+        branches: 85,
       },
     },
   },

@@ -1,0 +1,13 @@
+#!/bin/sh
+# pre-commit 门禁：类型检查 → 静态检查 → 全部测试 → 覆盖率阈值
+# 任一失败都会阻止提交。所有功能点必须有测试（见 AGENTS.md）。
+#
+# 紧急绕过（仅在确知无风险时使用，如纯文档改动）：
+#   git commit --no-verify
+set -e
+
+cd "$(git rev-parse --show-toplevel)"
+
+echo "▶ [pre-commit] pnpm verify：check + lint + test + coverage"
+pnpm -s verify
+echo "✔ [pre-commit] 全部通过"

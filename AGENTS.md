@@ -31,18 +31,59 @@ pnpm monorepo，四个包：
 | `pnpm dev` | 并行启动 web + server |
 | `pnpm dev:server` / `pnpm dev:web` | 单独启动 |
 | `pnpm cli --help` | 运行 CLI 命令（参数直接跟在后面） |
+| `pnpm verify` | **提交前门禁**：check + lint + test + coverage（pre-commit 钩子与 CI 都跑它） |
 | `pnpm test` | 全量测试（shared / server / cli / web 四个 project） |
-| `pnpm coverage` | 覆盖率（istanbul，含 70% 阈值检查） |
+| `pnpm coverage` | 覆盖率（istanbul，阈值 85%） |
 | `pnpm check` | 全仓库 TypeScript 类型检查 |
 | `pnpm lint` | oxlint |
 | `pnpm build` | 构建（目前只有 web 需要） |
 
+## 测试要求（硬性规则）
+
+**所有功能点必须有对应的测试用例；提交前测试必须全部通过。没有例外。**
+
+- **新增功能**：必须同时提交测试用例；**修改行为**：必须同步更新受影响的测试
+- **修复 bug**：先写一个能复现问题的失败测试，再修复——这个测试就是回归防线
+- 每个功能点至少覆盖：正常路径 + 边界/异常路径（非法参数、空值、错误分支、边界值）
+- **禁止**为了让门禁变绿而删除测试、跳过测试（`.skip` / `.todo`）或放宽断言；确需临时跳过必须写明原因与跟踪项
+- 覆盖率基线 **85%**（`pnpm coverage` 会做阈值检查），新增代码不得拉低现有覆盖率
+- 不确定某个功能点需要什么测试？先把验收标准写成测试（输入 → 期望输出），再写实现
+- 各包的测试类型与最低要求见对应包的 `AGENTS.md`
+
+### 对已提交功能的修改：强制测试复盘
+
+需求是针对**已提交功能**的修改（bug 修复、行为调整、需求变更）时，除了改代码，必须完成一次"为什么测试没拦住"的复盘：
+
+1. **先复现**：先写一个能暴露问题的失败测试，再改代码（没有复现测试不许修）
+2. **复盘**：判断这是哪一类盲区——缺用例 / 断言太松 / 只覆盖正常路径 / 测试入口与真实入口不一致 / mock 掩盖真实行为 / 边界与组合场景缺失 / 测试基础设施本身不可信
+3. **加固**：不只补本次用例，同类盲区（同类边界、同类错误路径、同类组件状态）要一起补；已有测试断言太弱的同步加强
+4. **沉淀**：复盘结论追加到对应包的「测试盲区台账」（见各包 `AGENTS.md`）；若暴露的是通用规则缺失，应同步升级根目录或包的规则
+
+**已提交功能修改的提交信息模板（body 必填前三项）**：
+
+```
+fix: <一句话描述修改>
+
+问题：<用户可见的现象 / 需求变更点>
+测试复盘：<为什么已有测试没有覆盖到>
+测试加固：<新增 / 加强了哪些用例，以及同类盲区是否一并补齐>
+```
+
+### 测试基础设施台账（根级）
+
+- **v8 覆盖率在 Bun 运行时下静默失效**：server project 合并崩溃、其余 project 报 0%，"测试通过"但覆盖率数字是假的 → 没发现的原因：只盯着测试是否通过，没有怀疑覆盖率数字本身 → **已加固**：切换到 istanbul，并把 `pnpm coverage`（85% 阈值）纳入 `pnpm verify`，数字异常会直接拦住提交
+- **pnpm 的 no-op 安装不执行生命周期脚本**：`postinstall` 只有在真正发生安装（全新 clone、`--force`）时才运行 → **已加固**：钩子安装放在 `postinstall`（全新 clone 必然执行），README 说明"克隆后跑一次 `pnpm install`"；用 `git config --get core.hooksPath` 可确认钩子是否生效
+
 ## 工作流（改完代码必须做）
 
-1. `pnpm check` —— 类型必须全绿
-2. `pnpm lint` —— 无告警
-3. `pnpm test` —— 改了逻辑就补/改对应测试；**禁止**提交红灯
-4. 提交信息用 Conventional Commits（`feat:` / `fix:` / `refactor:` / `test:` / `chore:` …），按需推送
+1. `pnpm verify` —— 一条命令跑完 check + lint + test + coverage，**必须全绿**
+2. 若是对**已提交功能**的修改：按「强制测试复盘」完成复盘，并把结论写进提交信息（问题 / 测试复盘 / 测试加固）
+3. 提交信息用 Conventional Commits（`feat:` / `fix:` / `refactor:` / `test:` / `chore:` …）
+
+门禁机制（双重保险，不要尝试绕过）：
+
+- **pre-commit 钩子**（`.githooks/pre-commit`，`pnpm install` 时通过 `prepare` 自动配置）：执行 `pnpm verify`，不通过直接阻止提交；**禁止**用 `git commit --no-verify` 提交红灯代码
+- **GitHub Actions**（`.github/workflows/ci.yml`）：push / PR 时重跑同一套门禁 + 构建，红了必须修到绿再继续
 
 新增依赖的标准姿势：
 

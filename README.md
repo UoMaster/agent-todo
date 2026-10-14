@@ -51,8 +51,9 @@ pnpm cli --help
 | `pnpm dev` | 并行启动 web + server |
 | `pnpm dev:web` / `pnpm dev:server` | 单独启动 |
 | `pnpm cli` | 运行 CLI（参数直接跟在后面） |
+| `pnpm verify` | 提交前门禁：check + lint + test + coverage（pre-commit 钩子与 CI 都跑它） |
 | `pnpm test` | 全量测试（四个 project：shared / server / cli / web） |
-| `pnpm coverage` | 带覆盖率报告（含阈值检查） |
+| `pnpm coverage` | 带覆盖率报告（阈值 85%） |
 | `pnpm build` | 构建所有包（目前只有 web 需要构建） |
 | `pnpm check` | 全仓库 TypeScript 类型检查 |
 | `pnpm lint` | oxlint 静态检查 |
@@ -68,12 +69,21 @@ pnpm cli --help
 | 页面渲染测试 | `packages/web/src/**/*.test.tsx` | 真实浏览器（Chromium） | Vitest Browser Mode + Playwright，真实 DOM / 样式 / 事件 |
 
 ```bash
+pnpm verify                  # 提交前门禁：check + lint + test + coverage（一条命令全绿）
 pnpm test                    # 全量（四个 project）
 pnpm test:watch              # 监听模式
 pnpm test:web                # 只跑浏览器渲染测试
-pnpm coverage                # 覆盖率报告（输出到 coverage/，含 70% 基线阈值）
+pnpm coverage                # 覆盖率报告（输出到 coverage/，阈值 85%）
 pnpm test --project server   # 按 project 过滤
 ```
+
+**测试规则（对人和 AI 同样生效，详见 `AGENTS.md`）**
+
+- 所有功能点必须有对应测试：新增功能同时提交测试，修改行为同步更新测试，修 bug 先写复现测试
+- **修改已提交功能必须做测试复盘**：为什么已有测试没拦住？同类盲区一起补，结论写进提交信息并沉淀到各包 `AGENTS.md` 的「测试盲区台账」
+- 提交前测试必须全部通过：`pnpm install` 时会自动配置 **pre-commit 钩子**（`.githooks/pre-commit`），不通过无法提交
+- **CI 门禁**：`.github/workflows/ci.yml` 在 push / PR 时跑同一套 `pnpm verify` + 构建
+- 覆盖率基线 **85%**，新增代码不得拉低
 
 单包运行：
 

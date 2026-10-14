@@ -15,10 +15,21 @@
 - 错误处理：捕获 shared 的 `ApiError`，输出人类可读信息，退出码非 0；不要把堆栈直接扔给用户
 - 需要访问本机 server 时依赖 `packages/cli/.env` 的 `NO_PROXY`（**仅用 Bun 运行时需要**；Node 的 `fetch` 不受系统代理影响，且 Node 不读取 `.env`，运行 `pnpm cli` 时无需任何额外配置）
 
-## 命令与测试
+## 命令
 
 - 运行：`pnpm cli --help`（根目录，参数直接跟）或直接执行 `./packages/cli/src/index.ts --help`
 - `pnpm --filter @agent-todo/cli check` / `test`
-- 测试两件套，**新增子命令必须同时补两类**：
-  - `src/main.test.ts` — 进程内 `runCommand` / `runMain` + `console` spy（快，验证解析与输出）
-  - `src/cli.e2e.test.ts` — `spawn(process.execPath, [entry, ...args])` 真子进程（验证 shebang、参数、退出码、stdout）
+
+## 测试要求（硬性）
+
+- **每个子命令都必须有两类测试，缺一不可**：
+  - `src/main.test.ts` — 进程内 `runCommand` / `runMain` + `console` spy（验证参数解析、输出内容、`--json` 输出形态）
+  - `src/cli.e2e.test.ts` — `spawn(process.execPath, [entry, ...args])` 真子进程（验证 shebang、参数、退出码、stdout / stderr）
+- 每个命令至少覆盖：正常执行 + 错误路径（参数非法、连不上 server、服务端业务错误码）
+- 新增子命令时，两类测试与命令实现放在同一个提交里
+
+## 测试盲区台账
+
+每次「测试复盘」的结论追加到这里（格式：现象 → 为什么没测到 → 已加固的用例/规则）。
+
+- **`--version` 在进程内测试无输出**（脚手架阶段）：citty 的 `--version` 由 `runMain` 处理，用 `runCommand` 测试时走到了占位 run 分支 → 没测到的原因：**进程内测试选错了入口**，与用户真实执行路径不一致 → **已加固**：进程内版本测试改用 `runMain`，同时用 `spawn(process.execPath)` 的 e2e 走真实入口；今后凡是"入口/框架行为"相关断言，以子进程 e2e 为准

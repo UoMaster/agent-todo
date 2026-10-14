@@ -12,9 +12,11 @@
   },
   "dependencies": {
     "@agent-todo/shared": "workspace:*",
+    "@hono/zod-validator": "catalog:",
     "@hono/node-server": "catalog:",
     "hono": "catalog:",
-    "pg": "catalog:"
+    "pg": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@electric-sql/pglite": "catalog:",

@@ -1,4 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // 三端共用：同时提供 DOM 与 Node 的类型（只用于类型检查；运行时只用标准 Web API）
+    "lib": ["ES2023", "DOM", "DOM.Iterable"]
+  },
   "include": ["src"]
 }

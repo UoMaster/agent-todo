@@ -12,8 +12,12 @@
 ## 结构与职责
 
 - `src/error.ts` — `ApiError`（web / cli 调用 HTTP 失败时共用）
-- 后续按主题拆文件，例如 `types.ts`（Todo 等业务类型）、`utils.ts`（纯函数工具）
+- `src/types.ts` — 业务类型与常量：`Todo` / `Attachment` / `Subtask` / `TodoInput` / `TodoUpdate` / `TagSummary`、优先级与标签常量、筛选与分组类型
+- `src/dates.ts` — 日期与格式化纯函数：`isDateKey` / `dateKey` / `addDays` / `daysBetween` / `bucketOf` / `isOverdue` / `formatDateRangeText` / `formatFileSize` / `compareTodos` …
+- `src/api.ts` — HTTP 客户端 `createClient({ baseUrl, fetch?, timeoutMs? })`（web 与 cli 复用）；错误统一抛 `ApiError`（网络层 → `statusCode = 0`）
+- 后续按主题拆文件（如 `utils.ts`）
 - **判断标准**：两端及以上都要用的类型 / 常量 / 守卫函数才放这里；只有一端用到的代码留在该包内
+- 日期一律用 `yyyy-mm-dd` 文本（DateKey）在前后端之间传递，**不要**传 `Date` 对象或用 `toISOString()` 取日期（会按 UTC 偏移）
 
 ## 命令
 

@@ -1,0 +1,63 @@
+/**
+ * 设计令牌（design tokens）—— 整个应用里唯一出现原始色值 / 尺寸值的地方。
+ *
+ * 规则：
+ * - 组件里禁止写死颜色，用语义类（`bg-surface`、`text-meta`、`border-border`）
+ *   或 `var(--*)` 引用这里的变量
+ * - UnoCSS 的 theme（uno.config.ts）把这些变量映射成语义色，换主题只改本文件
+ * - 取值来自原型的设计系统（Apple 风格），与 shared 里的 PRIORITY_COLOR 对应
+ */
+:root {
+  --bg: #ffffff;
+  --surface: #f5f5f7;
+  --surface-warm: #fbfbfd;
+  --fg: #1d1d1f;
+  --fg-2: #424245;
+  --muted: #6e6e73;
+  --meta: #86868b;
+  --border: #d2d2d7;
+  --border-soft: #e8e8ed;
+  --accent: #0071e3;
+  --accent-on: #ffffff;
+  --accent-hover: #0077ed;
+  --accent-active: #0066cc;
+  --success: #16a34a;
+  --warn: #eab308;
+  --danger: #dc2626;
+
+  --font-display: 'SF Pro Display', 'SF Pro Icons', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-body: 'SF Pro Text', 'SF Pro Icons', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, 'JetBrains Mono', Menlo, Monaco, Consolas, monospace;
+
+  --leading-body: 1.47;
+  --leading-tight: 1.05;
+  --tracking-display: -0.015em;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 980px;
+
+  --elev-raised: 0 12px 32px rgba(0, 0, 0, 0.08);
+  --motion-fast: 150ms;
+  --motion-base: 220ms;
+  --ease-standard: cubic-bezier(0.28, 0, 0.22, 1);
+
+  /* 派生值（不引入新的原始色）：用 color-mix 从上面的令牌算出来 */
+  --accent-soft: color-mix(in oklab, var(--accent), transparent 88%);
+  --fg-soft: color-mix(in oklab, var(--fg), transparent 94%);
+  --fg-soft-2: color-mix(in oklab, var(--fg), transparent 90%);
+  --danger-soft: color-mix(in oklab, var(--danger), transparent 90%);
+  --danger-text: color-mix(in oklab, var(--danger), var(--fg) 22%);
+  --scrim: color-mix(in oklab, var(--fg), transparent 82%);
+  --focus-ring: 0 0 0 4px color-mix(in oklab, var(--accent), transparent 65%);
+}

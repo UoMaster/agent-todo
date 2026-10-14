@@ -1,0 +1,22 @@
+{
+  "name": "@agent-todo/cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "agent-todo 命令行客户端（citty）",
+  "type": "module",
+  "bin": {
+    "agent-todo": "./src/index.ts"
+  },
+  "scripts": {
+    "start": "bun src/index.ts",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@agent-todo/shared": "workspace:*",
+    "citty": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}

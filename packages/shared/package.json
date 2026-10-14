@@ -1,0 +1,16 @@
+{
+  "name": "@agent-todo/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "agent-todo 共享类型与工具（web / server / cli 共用）",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}
